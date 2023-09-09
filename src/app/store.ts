@@ -11,6 +11,7 @@ import {
     fetchTasksWorkerSaga,
     removeTaskWorkerSaga, tasksWatcherSaga
 } from "../features/TodolistsList/Todolist/tasks-sagas";
+import {todolistsWatcherSaga} from "../features/TodolistsList/todolists-sagas";
 
 const rootReducer = combineReducers({
     tasks: tasksReducer,
@@ -30,6 +31,7 @@ sagaMiddleware.run(rootWatcher)
 function* rootWatcher() {
     yield takeEvery("APP/INITIALED-APP", initializeAppWorkerSaga)
     yield tasksWatcherSaga()
+    yield todolistsWatcherSaga()
 }
 
 
