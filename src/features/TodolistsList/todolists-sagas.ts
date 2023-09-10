@@ -1,11 +1,16 @@
 import {setAppStatusAC} from "../../app/app-reducer";
 import {todolistsAPI} from "../../api/todolists-api";
 import {handleServerNetworkErrorSaga} from "../../utils/error-utils";
-import {setTodolistsAC} from "./todolists-reducer";
+import {
+    addTodolistAC,
+    changeTodolistEntityStatusAC,
+    changeTodolistTitleAC,
+    removeTodolistAC,
+    setTodolistsAC
+} from "./todolists-reducer";
 import {call, put, takeEvery} from "redux-saga/effects";
+import {addTask, addTaskWorkerSaga} from "./Todolist/tasks-sagas";
 
-
-export const fetchTodolists = () => ({type: "TODOLISTS/SET-TODOLISTS"})
 
 export function* fetchTodolistsWorkerSaga(action: ReturnType<typeof fetchTodolists>) {
     yield put(setAppStatusAC('loading'))
@@ -18,40 +23,40 @@ export function* fetchTodolistsWorkerSaga(action: ReturnType<typeof fetchTodolis
     }
 }
 
-//
-// export const removeTodolistTC = (todolistId: string) => {
-//     return (dispatch: ThunkDispatch) => {
-//         //изменим глобальный статус приложения, чтобы вверху полоса побежала
-//         dispatch(setAppStatusAC('loading'))
-//         //изменим статус конкретного тудулиста, чтобы он мог задизеблить что надо
-//         dispatch(changeTodolistEntityStatusAC(todolistId, 'loading'))
-//         todolistsAPI.deleteTodolist(todolistId)
-//             .then((res) => {
-//                 dispatch(removeTodolistAC(todolistId))
-//                 //скажем глобально приложению, что асинхронная операция завершена
-//                 dispatch(setAppStatusAC('succeeded'))
-//             })
-//     }
-// }
-// export const addTodolistTC = (title: string) => {
-//     return (dispatch: ThunkDispatch) => {
-//         dispatch(setAppStatusAC('loading'))
-//         todolistsAPI.createTodolist(title)
-//             .then((res) => {
-//                 dispatch(addTodolistAC(res.data.data.item))
-//                 dispatch(setAppStatusAC('succeeded'))
-//             })
-//     }
-// }
-// export const changeTodolistTitleTC = (id: string, title: string) => {
-//     return (dispatch: Dispatch<ActionsType>) => {
-//         todolistsAPI.updateTodolist(id, title)
-//             .then((res) => {
-//                 dispatch(changeTodolistTitleAC(id, title))
-//             })
-//     }
-// }
+export const fetchTodolists = () => ({type: "TODOLISTS/SET-TODOLISTS"})
+
+export function* removeTodolistWorkerSaga(action: ReturnType<typeof removeTodolist>) {
+    yield put(setAppStatusAC('loading'))
+    yield put(changeTodolistEntityStatusAC(action.todolistId, 'loading'))
+
+    yield call(todolistsAPI.deleteTodolist, action.todolistId)
+    yield put(removeTodolistAC(action.todolistId))
+    yield put(setAppStatusAC('succeeded'))
+}
+
+
+export const removeTodolist = (todolistId: string) => ({type: "TODOLISTS/REMOVE-TODOLISTS", todolistId})
+
+export const addTodolist = (title: string) => ({type: "TODOLISTS/ADD-TODOLISTS", title})
+
+ export function* addTodolistWorkerSaga(action: ReturnType<typeof addTodolist>) {
+     yield put(setAppStatusAC('loading'))
+     const res = yield call(todolistsAPI.createTodolist, action.title)
+     yield put(addTodolistAC(res.data.data.item))
+     yield put(setAppStatusAC('succeeded'))
+
+}
+
+export const changeTodolist = (id: string, title: string) => ({type: "TODOLISTS/CHANGE-TITLE-TODOLIST", id, title})
+
+export function* changeTodolistTitleWorkerSaga(action: ReturnType<typeof changeTodolist>) {
+    const res = yield call(todolistsAPI.updateTodolist, action.id, action.title)
+    yield put(changeTodolistTitleAC(action.id, action.title))
+}
 
 export function* todolistsWatcherSaga() {
     yield takeEvery("TODOLISTS/SET-TODOLISTS", fetchTodolistsWorkerSaga)
+    yield takeEvery("TODOLISTS/REMOVE-TODOLISTS", removeTodolistWorkerSaga)
+    yield takeEvery("TODOLISTS/ADD-TODOLISTS", addTodolistWorkerSaga)
+    yield takeEvery("TODOLISTS/CHANGE-TITLE-TODOLIST", changeTodolistTitleWorkerSaga)
 }
